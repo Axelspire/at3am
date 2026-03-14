@@ -151,7 +151,7 @@ require (
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/tiaguinho/gosoap v1.4.4 // indirect
 	github.com/vultr/govultr/v3 v3.0.2 // indirect
-	go.mongodb.org/mongo-driver v1.4.4 // indirect
+	go.mongodb.org/mongo-driver v1.5.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
