@@ -17,6 +17,9 @@ coverage.html
 # Dependency directories
 vendor/
 
+cmd/*
+!cmd/.gitkeep
+
 # Go workspace file
 go.work
 
