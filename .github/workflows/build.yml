@@ -35,6 +35,12 @@ jobs:
       - name: Build all binaries
         run: make build-all
 
+      - name: Add README to each platform directory
+        run: |
+          for dir in dist/*/; do
+            cp README.md "$dir"
+          done
+
       - name: Create zip archives
         run: |
           cd dist
