@@ -3,13 +3,12 @@ name: build
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*.*.*' ]          # ← enables automatic releases on tags
+    tags: [ 'v*.*.*' ]          # enables automatic releases on tags
   pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  releases: write               # ← required for creating releases
+  contents: write               # corrected for creating releases (write includes read access)
 
 jobs:
   build:
