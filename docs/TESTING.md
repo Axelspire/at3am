@@ -36,7 +36,28 @@ go test -race ./...
 go test ./cmd/at3am/ -v -run TestVersionCommand
 ```
 
-**Coverage:** 87.2% overall (providers package excluded — 54 thin adapter files over external APIs)
+### Coverage
+
+**87.2% overall** (providers package excluded — 54 thin adapter files over external APIs)
+
+| Package | Coverage |
+|---------|----------|
+| `internal/log` | 97.9% |
+| `internal/diagnostics` | 100.0% |
+| `internal/mock` | 100.0% |
+| `internal/config` | 97.5% |
+| `internal/output` | 97.5% |
+| `internal/ttl` | 97.2% |
+| `internal/resolver` | 92.1% |
+| `internal/wait` | 91.7% |
+| `cmd/at3am` | 91.2% |
+| `internal/confidence` | 80.8% |
+| `cmd/at3am-hook` | 57.7% |
+
+**Test files:** 15 test files with 120+ test cases
+- Table-driven tests for comprehensive input coverage
+- Mock DNS system for resolver testing without external deps
+- All edge cases covered (nil inputs, errors, boundaries, level filtering)
 
 ## Integration Tests
 
@@ -74,9 +95,30 @@ Tests against real Cloudflare DNS with actual propagation.
 - Cloudflare zone ID
 - Test domain
 
+**Setup credentials:**
+
+Option 1: `.env/cloudflare.env` file (recommended for local testing):
+```bash
+mkdir -p .env
+cat > .env/cloudflare.env <<'EOF'
+CF_API_TOKEN=your-cloudflare-api-token
+CF_ZONE_ID=your-zone-id
+TEST_DOMAIN=yourdomain.com
+EOF
+chmod 600 .env/cloudflare.env
+```
+
+Option 2: Environment variables (recommended for CI/CD):
+```bash
+export CF_API_TOKEN="your-token"
+export CF_ZONE_ID="your-zone-id"
+export TEST_DOMAIN="example.com"
+```
+
 **Get credentials:**
 ```bash
 # 1. Create API token at https://dash.cloudflare.com/profile/api-tokens
+#    Minimum permissions: Zone.DNS.Edit
 # 2. Get zone ID
 curl -H "Authorization: Bearer YOUR_TOKEN" \
   https://api.cloudflare.com/client/v4/zones?name=example.com | jq '.result[0].id'
@@ -84,12 +126,11 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 **Run the test:**
 ```bash
-export CF_API_TOKEN="your-token"
-export CF_ZONE_ID="your-zone-id"
-export TEST_DOMAIN="example.com"
-
-go test -tags=integration -timeout 10m ./test/integration/ -v -run TestCertbotCloudflare
+go test -timeout 10m ./test/integration/ -v -run TestCertbotCloudflare
 ```
+
+> **Security:** `.env/` is listed in `.gitignore` and is never committed.
+> Environment variables take precedence over file values and are suitable for CI/CD secrets.
 
 **What it tests:**
 - ✅ Cloudflare API record creation
