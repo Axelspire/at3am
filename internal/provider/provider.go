@@ -205,7 +205,9 @@ func RelativeName(fqdn, zone string) string {
 func EarlyAccessTest(ctx context.Context, p DNSProvider, zone string) error {
 	epoch := time.Now().Unix()
 	name := fmt.Sprintf("_at3am_test_%d", epoch)
-	rec := libdns.TXT{Name: name, TTL: 30 * time.Second, Text: fmt.Sprintf("at3am_%d", epoch)}
+	// Use TTL=1 for automatic (Cloudflare default ~300s). Some providers require TTL >= 60.
+	// TTL=1 is a special value meaning "use provider default" in most DNS APIs.
+	rec := libdns.TXT{Name: name, TTL: 1 * time.Second, Text: fmt.Sprintf("at3am_%d", epoch)}
 
 	logger.Info("early access test | zone=%s name=%s", zone, name)
 
