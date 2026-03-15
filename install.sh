@@ -29,7 +29,15 @@ URL="https://github.com/${REPO}/releases/latest/download/${PLATFORM}.zip"
 curl -L -f -o /tmp/at3am.zip "$URL" || { echo "❌ Download failed — make sure the zip exists in the latest release"; exit 1; }
 
 mkdir -p "$HOME/.local/bin"
-unzip -o /tmp/at3am.zip -d "$HOME/.local/bin" "*/at3am*" 2>/dev/null || true
+unzip -o /tmp/at3am.zip -d "$HOME/.local/bin" 2>/dev/null || true
+
+# Move binaries from platform subdirectory to .local/bin
+find "$HOME/.local/bin" -maxdepth 2 -name "at3am*" -type f | while read -r file; do
+    if [ "$(dirname "$file")" != "$HOME/.local/bin" ]; then
+        mv "$file" "$HOME/.local/bin/"
+    fi
+done
+
 chmod +x "$HOME/.local/bin/at3am"* 2>/dev/null || true
 
 echo "✅ at3am installed successfully!"
