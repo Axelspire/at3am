@@ -42,26 +42,103 @@ It is aligned with [Let's Encrypt's Multi-Perspective Issuance Corroboration (MP
 
 ## Quick Start
 
+### Build & Install
+
 ```bash
-# Build
 git clone https://github.com/axelspire/at3am && cd at3am
 make build
-
-# Install system-wide
 sudo install -m 755 bin/at3am bin/at3am-hook /usr/local/bin/
+```
 
-# Wait for a TXT record to propagate
+### Standalone: Wait for DNS propagation
+
+```bash
 at3am wait \
   --domain _acme-challenge.example.com \
   --expected "your-validation-token" \
   --profile default
+```
 
-# Use with Certbot (provider autodetected from NS records)
+### Certbot (with automatic DNS provider detection)
+
+```bash
 sudo certbot certonly --manual \
   --manual-auth-hook    "at3am-hook manual-auth" \
   --manual-cleanup-hook "at3am-hook manual-cleanup" \
   --preferred-challenges dns \
   -d example.com
+```
+
+### acme.sh (with DNS provider)
+
+```bash
+# Set up at3am as the DNS hook
+export HOOK_DOMAIN_CONF="/etc/acme.sh/at3am.conf"
+export AT3AM_DNS_PROVIDER=cloudflare
+export AT3AM_DNS_CREDS=/etc/acme.sh/cloudflare.yaml
+
+# Issue certificate
+acme.sh --issue \
+  --dns "dns_at3am" \
+  -d example.com \
+  -d "*.example.com"
+
+# Renewal (add to cron)
+acme.sh --cron --home /etc/acme.sh
+```
+
+### lego (with DNS provider)
+
+```bash
+# Set up environment
+export LEGO_PROPAGATION_TIMEOUT=600
+export AT3AM_DNS_PROVIDER=route53
+export AT3AM_DNS_CREDS=/etc/lego/route53.yaml
+
+# Issue certificate
+lego --email admin@example.com \
+  --dns "dns_at3am" \
+  --domains example.com \
+  --domains "*.example.com" \
+  run
+```
+
+### step-ca / Smallstep (with DNS provider)
+
+```bash
+# Configure step-ca provisioner with DNS hook
+step ca provisioner add dns-provisioner \
+  --type ACME \
+  --challenge dns-01 \
+  --dns-hook "at3am-hook manual-auth" \
+  --dns-cleanup-hook "at3am-hook manual-cleanup"
+
+# Issue certificate
+step ca certificate example.com cert.pem key.pem \
+  --provisioner dns-provisioner
+```
+
+### Manual DNS workflow (any ACME client)
+
+```bash
+#!/bin/bash
+DOMAIN="example.com"
+TOKEN="$1"  # From ACME server
+
+# 1. Create DNS record via your provider
+# (your DNS API call here)
+
+# 2. Wait for propagation
+at3am wait \
+  --domain "_acme-challenge.${DOMAIN}" \
+  --expected "${TOKEN}" \
+  --profile default
+
+# 3. Signal ACME server to validate
+# (your ACME client continues here)
+
+# 4. Clean up DNS record
+# (your DNS API call here)
 ```
 
 ---
