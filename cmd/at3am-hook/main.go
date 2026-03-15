@@ -185,7 +185,7 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid profile: %w", err)
 	}
 
-	querier := resolver.New(5 * time.Second)
+	querier := resolver.New(2 * time.Second)
 	pool := resolver.NewPool(querier, nil)
 	formatter := output.NewFormatter(outputFormat, os.Stdout)
 	runner := wait.NewRunner(cfg, pool, formatter)

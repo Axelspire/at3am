@@ -13,10 +13,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/axelspire/at3am/internal/config"
+	"github.com/axelspire/at3am/internal/log"
 	"github.com/axelspire/at3am/internal/mock"
 	"github.com/axelspire/at3am/internal/output"
 	"github.com/axelspire/at3am/internal/resolver"
@@ -25,6 +28,23 @@ import (
 
 // TestCertbotMock simulates a full Certbot workflow with mock DNS.
 func TestCertbotMock(t *testing.T) {
+	// Initialize logging to test-results folder with datetime
+	root, err := repoRoot()
+	if err != nil {
+		t.Fatalf("failed to find repo root: %v", err)
+	}
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	testResultsDir := filepath.Join(root, "test-results")
+	logFile := filepath.Join(testResultsDir, fmt.Sprintf("at3am-mock_%s.log", timestamp))
+	if err := os.MkdirAll(testResultsDir, 0755); err != nil {
+		t.Fatalf("failed to create test-results directory: %v", err)
+	}
+	teardown, err := log.Init(log.INFO, logFile)
+	if err != nil {
+		t.Fatalf("log init failed: %v", err)
+	}
+	defer teardown()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -37,6 +57,7 @@ func TestCertbotMock(t *testing.T) {
 	t.Logf("  Domain: %s", domain)
 	t.Logf("  Challenge: %s", challengeDomain)
 	t.Logf("  Token: %s", token)
+	t.Logf("  Log file: %s", logFile)
 
 	// Step 1: Simulate manual-auth hook
 	t.Log("Step 1: Simulating manual-auth hook (create record)...")
@@ -85,6 +106,23 @@ func TestCertbotMock(t *testing.T) {
 
 // TestCertbotMockSlowPropagation tests with delayed propagation scenario.
 func TestCertbotMockSlowPropagation(t *testing.T) {
+	// Initialize logging to test-results folder with datetime
+	root, err := repoRoot()
+	if err != nil {
+		t.Fatalf("failed to find repo root: %v", err)
+	}
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	testResultsDir := filepath.Join(root, "test-results")
+	logFile := filepath.Join(testResultsDir, fmt.Sprintf("at3am-slow_%s.log", timestamp))
+	if err := os.MkdirAll(testResultsDir, 0755); err != nil {
+		t.Fatalf("failed to create test-results directory: %v", err)
+	}
+	teardown, err := log.Init(log.INFO, logFile)
+	if err != nil {
+		t.Fatalf("log init failed: %v", err)
+	}
+	defer teardown()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
@@ -94,6 +132,7 @@ func TestCertbotMockSlowPropagation(t *testing.T) {
 
 	t.Logf("Starting slow propagation test")
 	t.Logf("  Domain: %s", domain)
+	t.Logf("  Log file: %s", logFile)
 
 	// Create record
 	if err := simulateManualAuth(ctx, challengeDomain, token); err != nil {
@@ -132,6 +171,23 @@ func TestCertbotMockSlowPropagation(t *testing.T) {
 
 // TestCertbotMockMultipleDomains tests multiple domains in sequence (renewal).
 func TestCertbotMockMultipleDomains(t *testing.T) {
+	// Initialize logging to test-results folder with datetime
+	root, err := repoRoot()
+	if err != nil {
+		t.Fatalf("failed to find repo root: %v", err)
+	}
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	testResultsDir := filepath.Join(root, "test-results")
+	logFile := filepath.Join(testResultsDir, fmt.Sprintf("at3am-multi_%s.log", timestamp))
+	if err := os.MkdirAll(testResultsDir, 0755); err != nil {
+		t.Fatalf("failed to create test-results directory: %v", err)
+	}
+	teardown, err := log.Init(log.INFO, logFile)
+	if err != nil {
+		t.Fatalf("log init failed: %v", err)
+	}
+	defer teardown()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
@@ -139,6 +195,7 @@ func TestCertbotMockMultipleDomains(t *testing.T) {
 	token := "mock-validation-token" // Must match mock scenario
 
 	t.Logf("Starting multi-domain test (simulating renewal)")
+	t.Logf("  Log file: %s", logFile)
 
 	for _, domain := range domains {
 		t.Logf("  Processing domain: %s", domain)

@@ -145,7 +145,7 @@ func runWait(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create real DNS querier
-	querier := resolver.New(5 * time.Second)
+	querier := resolver.New(2 * time.Second)
 	querier.SetDNSSECValidate(dnssecValidate)
 
 	// Create resolver pool

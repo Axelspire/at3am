@@ -26,11 +26,13 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/axelspire/at3am/internal/config"
+	"github.com/axelspire/at3am/internal/log"
 	"github.com/axelspire/at3am/internal/output"
 	"github.com/axelspire/at3am/internal/resolver"
 	"github.com/axelspire/at3am/internal/wait"
@@ -78,6 +80,23 @@ func TestCertbotCloudflare(t *testing.T) {
 
 	cfToken, cfZoneID, domain := loadCloudflareEnv(t)
 
+	// Initialize logging to test-results folder with datetime
+	root, err := repoRoot()
+	if err != nil {
+		t.Fatalf("failed to find repo root: %v", err)
+	}
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	testResultsDir := filepath.Join(root, "test-results")
+	logFile := filepath.Join(testResultsDir, fmt.Sprintf("at3am-cloudflare_%s.log", timestamp))
+	if err := os.MkdirAll(testResultsDir, 0755); err != nil {
+		t.Fatalf("failed to create test-results directory: %v", err)
+	}
+	teardown, err := log.Init(log.INFO, logFile)
+	if err != nil {
+		t.Fatalf("log init failed: %v", err)
+	}
+	defer teardown()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -90,6 +109,7 @@ func TestCertbotCloudflare(t *testing.T) {
 	t.Logf("  Domain:    %s", domain)
 	t.Logf("  Challenge: %s", challengeDomain)
 	t.Logf("  Token:     %s", token)
+	t.Logf("  Log file:  %s", logFile)
 
 	// ── Step 1: Create TXT record (manual-auth hook) ─────────────────────────
 	t.Log("Step 1: Creating TXT record via Cloudflare API...")
@@ -242,7 +262,7 @@ func deleteCloudflareRecord(ctx context.Context, token, zoneID, recordID string)
 
 // verifyRecordVisible checks if the TXT record is visible via public DNS.
 func verifyRecordVisible(ctx context.Context, domain, expectedValue string) error {
-	querier := resolver.New(5 * time.Second)
+	querier := resolver.New(2 * time.Second)
 
 	// Query a public resolver (Google DNS)
 	result := querier.QueryTXT(ctx, domain, "8.8.8.8:53")

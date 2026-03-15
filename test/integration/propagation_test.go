@@ -236,7 +236,7 @@ func runPropagationTest(t *testing.T, creds propagationCreds, name, subdomain st
 	}()
 
 	// Set up resolver pool
-	querier := resolver.New(5 * time.Second)
+	querier := resolver.New(2 * time.Second)
 	pool := resolver.NewPool(querier, nil)
 	if err := pool.DiscoverAuthNS(context.Background(), fqdn); err != nil {
 		t.Logf("[%s] Warning: could not discover auth NS: %v", name, err)

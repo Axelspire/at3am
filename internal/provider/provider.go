@@ -274,18 +274,15 @@ func hasNS(ctx context.Context, zone string) bool {
 // SupportedProviders returns the list of provider names that can be configured.
 func SupportedProviders() []string {
 	return []string{
-		// Original 13
 		"cloudflare", "route53", "googleclouddns", "azure",
 		"digitalocean", "hetzner", "godaddy", "namecheap",
 		"porkbun", "ovh", "gandi", "linode", "powerdns",
-		// Additional 30
 		"dnsimple", "scaleway", "inwx", "rfc2136", "netlify",
 		"tencentcloud", "alidns", "desec", "transip", "bunny",
 		"ionos", "namesilo", "acmedns", "duckdns", "he",
 		"infomaniak", "luadns", "cloudns", "directadmin", "loopia",
 		"glesys", "huaweicloud", "acmeproxy", "dynv6",
 		"mythicbeasts", "simplydotcom", "netcup", "dynu", "gcore",
-		// Batch 3 (from user list)
 		"all-inkl", "autodns", "bluecat", "dnsupdate",
 		"domainnameshop", "mijnhost", "njalla", "regfish", "tecnocratica",
 		"unifi", "websupport", "wedos", "westcn", "volcengine",

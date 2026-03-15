@@ -205,7 +205,7 @@ func TestLookupNS_WithMockServer(t *testing.T) {
 }
 
 func TestCheckIPv6Connectivity(t *testing.T) {
-	resolver := New(5 * time.Second)
+	resolver := New(2 * time.Second)
 
 	// Test that the IPv6 check is cached (sync.Once behavior)
 	result1 := resolver.checkIPv6Connectivity()
