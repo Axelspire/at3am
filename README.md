@@ -99,66 +99,19 @@ at3am-hook version
 
 ## Testing
 
-### Unit tests
+See [docs/TESTING.md](docs/TESTING.md) for comprehensive testing guide covering:
+- Unit tests with 87.2% coverage
+- Mock integration tests (no credentials required)
+- Live Cloudflare integration tests
+- Propagation metrics measurement
+- CI/CD integration examples
 
+Quick start:
 ```bash
-make test          # run all unit tests
-make coverage      # run with HTML coverage report
+make test              # Run all unit tests
+make coverage          # Generate coverage report
+go test -timeout 5m ./test/integration/ -v -run TestCertbotMock  # Mock integration tests
 ```
-
-Current coverage (providers package excluded — 54 thin adapter files over external APIs):
-
-| Package | Coverage |
-|---------|----------|
-| `internal/log` | 97.9% |
-| `internal/diagnostics` | 100.0% |
-| `internal/mock` | 100.0% |
-| `internal/config` | 97.5% |
-| `internal/output` | 97.5% |
-| `internal/ttl` | 97.2% |
-| `internal/resolver` | 92.1% |
-| `internal/wait` | 91.7% |
-| `cmd/at3am` | 91.2% |
-| `internal/confidence` | 80.8% |
-| `cmd/at3am-hook` | 57.7% |
-| **Total** | **87.2%** |
-
-### Integration tests
-
-Integration tests live in `test/integration/` and cover the full Certbot workflow end-to-end.
-
-**Mock integration tests** (no credentials required — always run):
-
-```bash
-go test -timeout 5m ./test/integration/ -v -run TestCertbotMock
-```
-
-Scenarios: instant propagation, slow propagation, multi-domain renewal.
-
-**Cloudflare live integration test** (requires real credentials):
-
-Create `.env/cloudflare.env` at the repository root:
-
-```bash
-mkdir -p .env
-cat > .env/cloudflare.env <<'EOF'
-CF_API_TOKEN=your-cloudflare-api-token
-CF_ZONE_ID=your-zone-id
-TEST_DOMAIN=yourdomain.com
-EOF
-chmod 600 .env/cloudflare.env
-```
-
-Then run:
-
-```bash
-go test -timeout 10m ./test/integration/ -v -run TestCertbotCloudflare
-```
-
-This creates a real `_acme-challenge` TXT record, waits for propagation across 25+ resolvers, verifies visibility, and deletes the record — simulating the exact workflow Certbot invokes.
-
-> **Security:** `.env/` is listed in `.gitignore` and is never committed.
-> Environment variables (`CF_API_TOKEN`, `CF_ZONE_ID`, `TEST_DOMAIN`) override file values and are suitable for CI/CD secrets.
 
 ---
 
