@@ -23,7 +23,8 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "at3am",
 	Short: "Intelligent DNS-01 validation for ACME clients",
-	Long:  "at3am watches global DNS resolvers and signals when a DNS-01 TXT record has propagated with sufficient confidence.",
+	Long: "at3am watches global DNS resolvers and signals when a DNS-01 TXT record has propagated with sufficient confidence.\n\n" +
+		"(c) Axelspire 2026, contact: 3am@axelspire.com",
 }
 
 var versionCmd = &cobra.Command{

@@ -6,8 +6,25 @@ It is aligned with [Let's Encrypt's Multi-Perspective Issuance Corroboration (MP
 
 ---
 
+## 🚀 Quick Install
+
+**Linux, macOS, or Git Bash:**
+```bash
+curl -sfL https://raw.githubusercontent.com/Axelspire/at3am/main/install.sh | sh
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/Axelspire/at3am/main/install.ps1 | iex
+```
+
+After installation run `at3am --help` to verify.
+
+---
+
 ## Table of Contents
 
+- [Quick Install](#-quick-install)
 - [Quick Start](#quick-start)
 - [Building from Source](#building-from-source)
 - [Testing](#testing)
