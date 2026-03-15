@@ -65,7 +65,7 @@ func TestRun_SlowPropagation(t *testing.T) {
 	runner, _ := makeTestRunner(scenario, func(c *config.Config) {
 		c.Threshold = 80.0
 		c.ConsecutivePasses = 1
-		c.Timeout = 5 * time.Second
+		c.Timeout = 2 * time.Second
 	})
 
 	code := runner.Run(context.Background())

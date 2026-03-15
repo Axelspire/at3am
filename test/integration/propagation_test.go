@@ -17,12 +17,14 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/axelspire/at3am/internal/confidence"
 	"github.com/axelspire/at3am/internal/diagnostics"
+	"github.com/axelspire/at3am/internal/log"
 	"github.com/axelspire/at3am/internal/resolver"
 	"github.com/axelspire/at3am/internal/ttl"
 )
@@ -98,6 +100,7 @@ type PropagationTest struct {
 	Token         string             `json:"token"`
 	FQDN          string             `json:"fqdn"`
 	TTL           int                `json:"ttl"`
+	RecordID      string             `json:"record_id,omitempty"`
 	RecordCreated time.Time          `json:"record_created"`
 	FirstSeen     time.Time          `json:"first_seen,omitempty"`
 	Results       []TestResult       `json:"results"`
@@ -121,14 +124,14 @@ func cfRequest(creds propagationCreds, method, path string, body interface{}) (m
 		reqBodyStr = string(data)
 	}
 
-	fmt.Printf("[API] %s %s%s\n", method, cfAPIBase, path)
+	log.Debug("[API] %s %s%s", method, cfAPIBase, path)
 	if reqBodyStr != "" {
-		fmt.Printf("[API] Request Body: %s\n", reqBodyStr)
+		log.Debug("[API] Request Body: %s", reqBodyStr)
 	}
 
 	req, err := http.NewRequest(method, cfAPIBase+path, reqBody)
 	if err != nil {
-		fmt.Printf("[API] Request creation failed: %v\n", err)
+		log.Error("[API] Request creation failed: %v", err)
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+creds.token)
@@ -136,33 +139,33 @@ func cfRequest(creds propagationCreds, method, path string, body interface{}) (m
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Printf("[API] Request failed: %v\n", err)
+		log.Error("[API] Request failed: %v", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 	respData, _ := io.ReadAll(resp.Body)
 
-	fmt.Printf("[API] Response Status: %s\n", resp.Status)
-	fmt.Printf("[API] Response Body: %s\n", string(respData))
+	log.Debug("[API] Response Status: %s", resp.Status)
+	log.Debug("[API] Response Body: %s", string(respData))
 
 	var result map[string]interface{}
 	if err := json.Unmarshal(respData, &result); err != nil {
-		fmt.Printf("[API] Failed to parse response: %v\n", err)
+		log.Error("[API] Failed to parse response: %v", err)
 		return nil, fmt.Errorf("failed to parse response: %s", string(respData))
 	}
 	if success, ok := result["success"].(bool); !ok || !success {
-		fmt.Printf("[API] API call failed: %s\n", string(respData))
+		log.Error("[API] API call failed: %s", string(respData))
 		return nil, fmt.Errorf("API error: %s", string(respData))
 	}
 
-	fmt.Printf("[API] API call successful\n")
+	log.Debug("[API] API call successful")
 	return result, nil
 }
 
 // createTXTRecord creates a TXT record via Cloudflare API.
 func createTXTRecord(creds propagationCreds, subdomain, value string, ttlSec int) (string, error) {
 	fqdn := subdomain + "." + creds.domain
-	quotedValue := fmt.Sprintf(`"%s"`, value)
+	quotedValue := fmt.Sprintf("\"%s\"", value)
 	body := map[string]interface{}{
 		"type":    "TXT",
 		"name":    fqdn,
@@ -225,6 +228,7 @@ func runPropagationTest(t *testing.T, creds propagationCreds, name, subdomain st
 	if err != nil {
 		t.Fatalf("failed to create TXT record: %v", err)
 	}
+	pt.RecordID = recordID
 	pt.RecordCreated = time.Now()
 	defer func() {
 		t.Logf("[%s] Cleaning up record %s", name, recordID)
@@ -232,7 +236,7 @@ func runPropagationTest(t *testing.T, creds propagationCreds, name, subdomain st
 	}()
 
 	// Set up resolver pool
-	querier := resolver.New(5 * time.Second)
+	querier := resolver.New(2 * time.Second)
 	pool := resolver.NewPool(querier, nil)
 	if err := pool.DiscoverAuthNS(context.Background(), fqdn); err != nil {
 		t.Logf("[%s] Warning: could not discover auth NS: %v", name, err)
@@ -507,20 +511,57 @@ func TestPropagation(t *testing.T) {
 		t.Skip("Skipping integration test. Set AT3AM_INTEGRATION=1 to run.")
 	}
 
+	// Initialize logging to test-results folder with datetime
+	root, err := repoRoot()
+	if err != nil {
+		t.Fatalf("failed to find repo root: %v", err)
+	}
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	testResultsDir := filepath.Join(root, "test-results")
+	logFile := filepath.Join(testResultsDir, fmt.Sprintf("at3am-propagation_%s.log", timestamp))
+	if err := os.MkdirAll(testResultsDir, 0755); err != nil {
+		t.Fatalf("failed to create test-results directory: %v", err)
+	}
+	teardown, err := log.Init(log.DEBUG, logFile)
+	if err != nil {
+		t.Fatalf("log init failed: %v", err)
+	}
+	defer teardown()
+
 	creds := loadPropagationCreds(t)
 	t.Logf("Domain: %s  Zone: %s", creds.domain, creds.zoneID)
 
 	// Unique 8-hex run ID — guarantees fresh FQDNs across runs.
 	runID := randomToken()[:8]
 	t.Logf("Run ID: %s (all FQDNs prefixed with this ID)", runID)
+	t.Logf("Log file: %s", logFile)
 
 	var allResults []PropagationTest
+	var recordsToCleanup []struct {
+		subdomain string
+		recordID  string
+	}
+
+	// Ensure cleanup happens even if test times out
+	defer func() {
+		t.Logf("Cleaning up %d DNS records...", len(recordsToCleanup))
+		for _, rec := range recordsToCleanup {
+			if rec.recordID != "" {
+				t.Logf("Deleting record %s (%s)", rec.recordID, rec.subdomain)
+				_ = deleteTXTRecord(creds, rec.recordID)
+			}
+		}
+	}()
 
 	// Test 1: Low TTL (60s) — simulates a typical ACME challenge record.
 	t.Run("LowTTL_60s", func(t *testing.T) {
 		subdomain := fmt.Sprintf("_acme-%s", runID)
 		pt := runPropagationTest(t, creds, "LowTTL_60s", subdomain, 60, 5*time.Minute)
 		allResults = append(allResults, pt)
+		recordsToCleanup = append(recordsToCleanup, struct {
+			subdomain string
+			recordID  string
+		}{subdomain, pt.RecordID})
 	})
 
 	// Brief pause between tests to avoid hitting Cloudflare rate limits.
@@ -531,6 +572,10 @@ func TestPropagation(t *testing.T) {
 		subdomain := fmt.Sprintf("_acme-auto-%s", runID)
 		pt := runPropagationTest(t, creds, "AutoTTL", subdomain, 1, 5*time.Minute)
 		allResults = append(allResults, pt)
+		recordsToCleanup = append(recordsToCleanup, struct {
+			subdomain string
+			recordID  string
+		}{subdomain, pt.RecordID})
 	})
 
 	time.Sleep(5 * time.Second)
@@ -540,6 +585,10 @@ func TestPropagation(t *testing.T) {
 		subdomain := fmt.Sprintf("_acme-%s.www", runID)
 		pt := runPropagationTest(t, creds, "SubdomainChallenge", subdomain, 60, 5*time.Minute)
 		allResults = append(allResults, pt)
+		recordsToCleanup = append(recordsToCleanup, struct {
+			subdomain string
+			recordID  string
+		}{subdomain, pt.RecordID})
 	})
 
 	// Output summary and logs

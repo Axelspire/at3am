@@ -88,7 +88,7 @@ go test -timeout 5m ./test/integration/ -v -run TestCertbotMock -v
    - Tests fast-path scoring
    - Typical wait: 5-10 seconds
 
-2. **Slow Propagation** (`slow`)
+2. **Slow Propagation** (`slow_propagation`)
    - Record takes time to propagate
    - Tests strict profile scoring
    - Typical wait: 30-60 seconds
