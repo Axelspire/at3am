@@ -48,7 +48,7 @@ If you're dealing with large fleets, hybrid environments, or regulatory requirem
 ## Pricing & Access
 
 - **Annual subscription**: Simple pricing structure
-- **Get started**: Email sales@yourdomain.com or visit [yourwebsite.com/at3am-enterprise] for a demo.
+- **Get started**: Email 3am@axlespire.com or visit [https://axlespire.com/3am](https://axlespire.com/3am) for a demo.
 
 For questions or feature requests on the free version, open an issue here.
 
