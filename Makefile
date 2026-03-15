@@ -15,6 +15,13 @@ LDFLAGS := -ldflags "\
 	-X main.commit=$(COMMIT) \
 	-X main.buildTime=$(BUILD_TIME)"
 
+# Static linking flags for Linux (no glibc dependency)
+STATIC_LDFLAGS := -ldflags "\
+	-X main.version=$(VERSION) \
+	-X main.commit=$(COMMIT) \
+	-X main.buildTime=$(BUILD_TIME) \
+	-s -w"
+
 help:
 	@echo "at3am build targets:"
 	@echo "  make build                - Build for the current platform"
@@ -50,28 +57,28 @@ build-hook:
 # ── Linux builds ──────────────────────────────────────────────────────────────
 
 build-linux:
-	@echo "Building Linux amd64..."
+	@echo "Building Linux amd64 (static)..."
 	@mkdir -p dist/linux-amd64
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o dist/linux-amd64/at3am      ./cmd/at3am
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o dist/linux-amd64/at3am-hook ./cmd/at3am-hook
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(STATIC_LDFLAGS) -o dist/linux-amd64/at3am      ./cmd/at3am
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(STATIC_LDFLAGS) -o dist/linux-amd64/at3am-hook ./cmd/at3am-hook
 
 build-linux-arm64:
-	@echo "Building Linux arm64..."
+	@echo "Building Linux arm64 (static)..."
 	@mkdir -p dist/linux-arm64
-	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o dist/linux-arm64/at3am      ./cmd/at3am
-	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o dist/linux-arm64/at3am-hook ./cmd/at3am-hook
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(STATIC_LDFLAGS) -o dist/linux-arm64/at3am      ./cmd/at3am
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(STATIC_LDFLAGS) -o dist/linux-arm64/at3am-hook ./cmd/at3am-hook
 
 build-linux-386:
-	@echo "Building Linux 386..."
+	@echo "Building Linux 386 (static)..."
 	@mkdir -p dist/linux-386
-	GOOS=linux GOARCH=386 go build $(LDFLAGS) -o dist/linux-386/at3am      ./cmd/at3am
-	GOOS=linux GOARCH=386 go build $(LDFLAGS) -o dist/linux-386/at3am-hook ./cmd/at3am-hook
+	CGO_ENABLED=0 GOOS=linux GOARCH=386 go build $(STATIC_LDFLAGS) -o dist/linux-386/at3am      ./cmd/at3am
+	CGO_ENABLED=0 GOOS=linux GOARCH=386 go build $(STATIC_LDFLAGS) -o dist/linux-386/at3am-hook ./cmd/at3am-hook
 
 build-linux-arm:
-	@echo "Building Linux arm..."
+	@echo "Building Linux arm (static)..."
 	@mkdir -p dist/linux-arm
-	GOOS=linux GOARCH=arm go build $(LDFLAGS) -o dist/linux-arm/at3am      ./cmd/at3am
-	GOOS=linux GOARCH=arm go build $(LDFLAGS) -o dist/linux-arm/at3am-hook ./cmd/at3am-hook
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build $(STATIC_LDFLAGS) -o dist/linux-arm/at3am      ./cmd/at3am
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build $(STATIC_LDFLAGS) -o dist/linux-arm/at3am-hook ./cmd/at3am-hook
 
 # ── macOS builds ──────────────────────────────────────────────────────────────
 
