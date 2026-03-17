@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/axelspire/at3am/internal/config"
@@ -50,21 +51,34 @@ var manualCleanupCmd = &cobra.Command{
 	RunE:  runManualCleanup,
 }
 
+func defaultCredsPath(providerName string) string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "~"
+	}
+	return filepath.Join(home, ".at3am", providerName+".yaml")
+}
+
 func init() {
 	rootCmd.AddCommand(versionCmd, manualAuthCmd, manualCleanupCmd)
 
 	// Flags for manual-auth
 	manualAuthCmd.Flags().String("provider", "", "DNS provider (auto-detected if not set)")
-	manualAuthCmd.Flags().String("creds", "", "Path to credentials YAML file")
-	manualAuthCmd.Flags().String("profile", "default", "Profile: default, strict, or fast")
+	manualAuthCmd.Flags().String("creds", "", "Path to credentials YAML file (default: ~/.at3am/<provider>.yaml)")
+	manualAuthCmd.Flags().String("profile", "default", "Propagation profile: default, strict, or fast")
 	manualAuthCmd.Flags().String("log-level", "warn", "Log level: debug, info, warn, error")
 	manualAuthCmd.Flags().String("log-file", "", "Log file path")
+	manualAuthCmd.Flags().String("output", "quiet", "Output format: quiet, text, json")
+	manualAuthCmd.Flags().String("challenge-type", "dns-01", "ACME challenge type: dns-01 or persist")
+	manualAuthCmd.Flags().Bool("skip-dns", false, "Skip DNS record creation/deletion (propagation wait only)")
 
 	// Flags for manual-cleanup
 	manualCleanupCmd.Flags().String("provider", "", "DNS provider (auto-detected if not set)")
-	manualCleanupCmd.Flags().String("creds", "", "Path to credentials YAML file")
+	manualCleanupCmd.Flags().String("creds", "", "Path to credentials YAML file (default: ~/.at3am/<provider>.yaml)")
+	manualCleanupCmd.Flags().String("profile", "default", "Propagation profile: default, strict, or fast")
 	manualCleanupCmd.Flags().String("log-level", "warn", "Log level: debug, info, warn, error")
 	manualCleanupCmd.Flags().String("log-file", "", "Log file path")
+	manualCleanupCmd.Flags().Bool("skip-dns", false, "Skip DNS record deletion")
 }
 
 func runManualAuth(cmd *cobra.Command, args []string) error {
@@ -87,14 +101,15 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 	if credsPath == "" {
 		credsPath = os.Getenv("AT3AM_DNS_CREDS")
 	}
-	skipDNS := os.Getenv("AT3AM_SKIP_DNS") == "1"
+	skipDNSFlag, _ := cmd.Flags().GetBool("skip-dns")
+	skipDNS := skipDNSFlag || os.Getenv("AT3AM_SKIP_DNS") == "1"
 	profileStr, _ := cmd.Flags().GetString("profile")
 	if e := os.Getenv("AT3AM_PROFILE"); e != "" {
 		profileStr = e
 	}
-	outputFormat := os.Getenv("AT3AM_OUTPUT")
-	if outputFormat == "" {
-		outputFormat = "quiet"
+	outputFormat, _ := cmd.Flags().GetString("output")
+	if e := os.Getenv("AT3AM_OUTPUT"); e != "" {
+		outputFormat = e
 	}
 	logLevelStr, _ := cmd.Flags().GetString("log-level")
 	if e := os.Getenv("AT3AM_LOG_LEVEL"); e != "" {
@@ -104,9 +119,9 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 	if e := os.Getenv("AT3AM_LOG_FILE"); e != "" {
 		logFile = e
 	}
-	challengeTypeStr := os.Getenv("AT3AM_CHALLENGE_TYPE")
-	if challengeTypeStr == "" {
-		challengeTypeStr = "dns-01"
+	challengeTypeStr, _ := cmd.Flags().GetString("challenge-type")
+	if e := os.Getenv("AT3AM_CHALLENGE_TYPE"); e != "" {
+		challengeTypeStr = e
 	}
 
 	// 3. Init logger
@@ -134,7 +149,7 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 			providerName = detected
 		}
 		if credsPath == "" {
-			credsPath = "~/.at3am/" + providerName + ".yaml"
+			credsPath = defaultCredsPath(providerName)
 		}
 
 		// Create credentials template on first run and ask user to fill it in
@@ -213,7 +228,8 @@ func runManualCleanup(cmd *cobra.Command, args []string) error {
 	if e := os.Getenv("AT3AM_LOG_FILE"); e != "" {
 		logFile = e
 	}
-	skipDNS := os.Getenv("AT3AM_SKIP_DNS") == "1"
+	skipDNSFlag, _ := cmd.Flags().GetBool("skip-dns")
+	skipDNS := skipDNSFlag || os.Getenv("AT3AM_SKIP_DNS") == "1"
 
 	// 3. Init logger
 	logLevel, err := log.ParseLevel(logLevelStr)
@@ -253,7 +269,7 @@ func runManualCleanup(cmd *cobra.Command, args []string) error {
 		credsPath = os.Getenv("AT3AM_DNS_CREDS")
 	}
 	if credsPath == "" {
-		credsPath = "~/.at3am/" + providerName + ".yaml"
+		credsPath = defaultCredsPath(providerName)
 	}
 
 	_, creds, err := provider.LoadCredentials(credsPath)
