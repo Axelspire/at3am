@@ -453,10 +453,10 @@ sudo at3am-hook version
 The hook reads credentials from a YAML file. On first run with an unknown provider,
 a commented template is created automatically.
 
-**Default path:** `/etc/at3am/<provider>.yaml`
+**Default path:** `~/.at3am/<provider>.yaml`
 **Override:** `export AT3AM_DNS_CREDS=/path/to/creds.yaml`
 
-Example for Cloudflare (`/etc/at3am/cloudflare.yaml`):
+Example for Cloudflare (`~/.at3am/cloudflare.yaml`):
 ```yaml
 provider: cloudflare
 
@@ -493,8 +493,8 @@ azure:
 
 Protect the file:
 ```bash
-sudo chmod 600 /etc/at3am/cloudflare.yaml
-sudo chown root:root /etc/at3am/cloudflare.yaml
+sudo chmod 600 ~/.at3am/cloudflare.yaml
+sudo chown root:root ~/.at3am/cloudflare.yaml
 ```
 
 Individual credential values can also be overridden with env vars of the form
@@ -519,7 +519,7 @@ The hook **autodetects** your provider by resolving the NS records of your domai
 
 ```bash
 export AT3AM_DNS_PROVIDER=cloudflare
-export AT3AM_DNS_CREDS=/etc/at3am/cloudflare.yaml
+export AT3AM_DNS_CREDS=~/.at3am/cloudflare.yaml
 ```
 
 For multiple domains:
@@ -558,23 +558,23 @@ certbot calls "at3am-hook manual-cleanup"
 
 ### Environment variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CERTBOT_DOMAIN` | *(set by Certbot)* | Bare domain, e.g. `example.com` |
-| `CERTBOT_VALIDATION` | *(set by Certbot)* | TXT value to provision |
-| `AT3AM_DNS_PROVIDER` | *(autodetect)* | Provider name (see table above) |
-| `AT3AM_DNS_CREDS` | `/etc/at3am/<provider>.yaml` | Path to YAML credentials file |
-| `AT3AM_SKIP_DNS` | `0` | Set to `1` to skip record create/delete (propagation-wait only) |
-| `AT3AM_PROFILE` | `default` | Readiness profile: `strict`, `default`, `fast`, `yolo` |
-| `AT3AM_OUTPUT` | `quiet` | Output format: `human`, `json`, `quiet` |
-| `AT3AM_LOG_LEVEL` | *(off)* | Stdout log level: `debug`, `info`, `warn`, `error` |
-| `AT3AM_LOG_FILE` | *(off)* | Path to write a production log file (INFO+ events) |
-| `AT3AM_CHALLENGE_TYPE` | `dns-01` | `dns-01` or `persist` |
+| Variable | Default                    | Description |
+|----------|----------------------------|-------------|
+| `CERTBOT_DOMAIN` | *(set by Certbot)*         | Bare domain, e.g. `example.com` |
+| `CERTBOT_VALIDATION` | *(set by Certbot)*         | TXT value to provision |
+| `AT3AM_DNS_PROVIDER` | *(autodetect)*             | Provider name (see table above) |
+| `AT3AM_DNS_CREDS` | `~/.at3am/<provider>.yaml` | Path to YAML credentials file |
+| `AT3AM_SKIP_DNS` | `0`                        | Set to `1` to skip record create/delete (propagation-wait only) |
+| `AT3AM_PROFILE` | `default`                  | Readiness profile: `strict`, `default`, `fast`, `yolo` |
+| `AT3AM_OUTPUT` | `quiet`                    | Output format: `human`, `json`, `quiet` |
+| `AT3AM_LOG_LEVEL` | *(off)*                    | Stdout log level: `debug`, `info`, `warn`, `error` |
+| `AT3AM_LOG_FILE` | *(off)*                    | Path to write a production log file (INFO+ events) |
+| `AT3AM_CHALLENGE_TYPE` | `dns-01`                   | `dns-01` or `persist` |
 
 Example with explicit provider and logging:
 ```bash
 export AT3AM_DNS_PROVIDER=cloudflare
-export AT3AM_DNS_CREDS=/etc/at3am/cloudflare.yaml
+export AT3AM_DNS_CREDS=~/.at3am/cloudflare.yaml
 export AT3AM_PROFILE=strict
 export AT3AM_LOG_FILE=/var/log/at3am.log
 export AT3AM_LOG_LEVEL=info

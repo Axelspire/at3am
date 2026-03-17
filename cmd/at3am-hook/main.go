@@ -134,7 +134,7 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 			providerName = detected
 		}
 		if credsPath == "" {
-			credsPath = "/etc/at3am/" + providerName + ".yaml"
+			credsPath = "~/.at3am/" + providerName + ".yaml"
 		}
 
 		// Create credentials template on first run and ask user to fill it in
@@ -253,7 +253,7 @@ func runManualCleanup(cmd *cobra.Command, args []string) error {
 		credsPath = os.Getenv("AT3AM_DNS_CREDS")
 	}
 	if credsPath == "" {
-		credsPath = "/etc/at3am/" + providerName + ".yaml"
+		credsPath = "~/.at3am/" + providerName + ".yaml"
 	}
 
 	_, creds, err := provider.LoadCredentials(credsPath)
