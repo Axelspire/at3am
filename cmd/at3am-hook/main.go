@@ -39,15 +39,15 @@ var versionCmd = &cobra.Command{
 
 var manualAuthCmd = &cobra.Command{
 	Use:   "manual-auth",
-	Short: "Certbot manual auth hook",
-	Long:  "Create DNS record and wait for propagation. Called by Certbot during validation.",
+	Short: "ACME client manual auth hook",
+	Long:  "Create DNS record and wait for propagation. Called by ACME client during validation.",
 	RunE:  runManualAuth,
 }
 
 var manualCleanupCmd = &cobra.Command{
 	Use:   "manual-cleanup",
-	Short: "Certbot manual cleanup hook",
-	Long:  "Delete DNS record after validation. Called by Certbot after validation completes.",
+	Short: "ACME client manual cleanup hook",
+	Long:  "Delete DNS record after validation. Called by ACME client after validation completes.",
 	RunE:  runManualCleanup,
 }
 
@@ -202,6 +202,14 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 
 	querier := resolver.New(2 * time.Second)
 	pool := resolver.NewPool(querier, nil)
+
+	// Discover authoritative NS resolvers for the challenge domain so the
+	// confidence engine can enforce the "ALL auth NS must confirm" requirement.
+	// If discovery fails, the pool falls back to public-only (logged as a warning).
+	if err := pool.DiscoverAuthNS(ctx, challengeFQDN); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: auth NS discovery failed (%v) — falling back to public resolvers only\n", err)
+	}
+
 	formatter := output.NewFormatter(outputFormat, os.Stdout)
 	runner := wait.NewRunner(cfg, pool, formatter)
 	os.Exit(runner.Run(ctx))

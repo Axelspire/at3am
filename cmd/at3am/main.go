@@ -152,6 +152,15 @@ func runWait(cmd *cobra.Command, args []string) error {
 	// Create resolver pool
 	pool := resolver.NewPool(querier, customResolvers)
 
+	// Discover authoritative NS resolvers so the confidence engine can enforce
+	// the "ALL auth NS must confirm" requirement. Skipped in mock mode since
+	// mock scenarios set auth NS directly via SetAuthResolvers.
+	if !mockMode {
+		if err := pool.DiscoverAuthNS(context.Background(), domain); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: auth NS discovery failed (%v) — falling back to public resolvers only\n", err)
+		}
+	}
+
 	// Create formatter
 	formatter := output.NewFormatter(outputFormat, os.Stdout)
 
