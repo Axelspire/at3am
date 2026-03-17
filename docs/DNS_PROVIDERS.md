@@ -65,7 +65,7 @@
 
 ### Auto-detection
 ```bash
-export AT3AM_DNS_CREDS=/etc/at3am/cloudflare.yaml
+export AT3AM_DNS_CREDS=/~/.at3am/cloudflare.yaml
 certbot certonly --manual \
   --manual-auth-hook    "at3am-hook manual-auth" \
   --manual-cleanup-hook "at3am-hook manual-cleanup" \
@@ -75,7 +75,7 @@ certbot certonly --manual \
 ### Explicit provider
 ```bash
 export AT3AM_DNS_PROVIDER=route53
-export AT3AM_DNS_CREDS=/etc/at3am/route53.yaml
+export AT3AM_DNS_CREDS=~/.at3am/route53.yaml
 certbot certonly --manual \
   --manual-auth-hook    "at3am-hook manual-auth" \
   --manual-cleanup-hook "at3am-hook manual-cleanup" \
@@ -95,7 +95,7 @@ cloudflare:
 
 Protect the file:
 ```bash
-sudo chmod 600 /etc/at3am/cloudflare.yaml
+sudo chmod 600 ~/.at3am/cloudflare.yaml
 ```
 
 ## License

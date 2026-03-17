@@ -189,7 +189,7 @@ make coverage
 ```bash
 # First run creates credential template
 export AT3AM_DNS_PROVIDER=cloudflare
-export AT3AM_DNS_CREDS=/etc/at3am/cloudflare.yaml
+export AT3AM_DNS_CREDS=~/.at3am/cloudflare.yaml
 
 certbot certonly --manual \
   --manual-auth-hook    "at3am-hook manual-auth" \
