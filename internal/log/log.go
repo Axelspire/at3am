@@ -2,8 +2,10 @@
 //
 // Two independent output targets are managed globally:
 //
-//   - console — writes to stdout at the level set by --log-level / --debug.
+//   - console — writes to stderr at the level set by --log-level / --debug.
 //     All four levels (DEBUG, INFO, WARN, ERROR) are routed here.
+//     stderr is used (not stdout) so logs are unbuffered when the process
+//     is invoked as a subprocess (e.g. by Certbot), giving real-time output.
 //
 //   - file — writes to a log file at INFO+ only (production events).
 //     DEBUG messages are never written to the file; this keeps the file
@@ -120,7 +122,7 @@ var (
 func Init(consoleLevel Level, filePath string) (func(), error) {
 	if consoleLevel < OFF {
 		console.level = consoleLevel
-		console.out = os.Stdout
+		console.out = os.Stderr
 	}
 
 	if filePath != "" {
