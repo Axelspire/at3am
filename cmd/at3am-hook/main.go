@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/axelspire/at3am/internal/config"
@@ -128,27 +129,32 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	// 1. Domain and validation token.
-	// Priority: --domain/--validation flags > CERTBOT_* env vars > LEGO_* env vars.
-	// --domain is the full challenge FQDN (e.g. _acme-challenge.example.com).
+	// Priority: positional args (lego) > --domain/--validation flags > CERTBOT_* env vars > LEGO_* env vars.
+	// Positional args and --domain are the full challenge FQDN (trailing dot stripped if present).
 	// CERTBOT_DOMAIN and LEGO_DOMAIN are bare domains; _acme-challenge. is prepended.
-	domainFlag, _ := cmd.Flags().GetString("domain")
-	var challengeFQDN string
-	if domainFlag != "" {
-		challengeFQDN = domainFlag
-	} else if env := os.Getenv("CERTBOT_DOMAIN"); env != "" {
-		challengeFQDN = "_acme-challenge." + env
-	} else if env := os.Getenv("LEGO_DOMAIN"); env != "" {
-		challengeFQDN = "_acme-challenge." + env
-	}
-	validation, _ := cmd.Flags().GetString("validation")
-	if validation == "" {
-		validation = os.Getenv("CERTBOT_VALIDATION")
-	}
-	if validation == "" {
-		validation = os.Getenv("LEGO_KEY_AUTH")
+	var challengeFQDN, validation string
+	if len(args) >= 2 {
+		challengeFQDN = strings.TrimSuffix(args[0], ".")
+		validation = args[1]
+	} else {
+		domainFlag, _ := cmd.Flags().GetString("domain")
+		if domainFlag != "" {
+			challengeFQDN = strings.TrimSuffix(domainFlag, ".")
+		} else if env := os.Getenv("CERTBOT_DOMAIN"); env != "" {
+			challengeFQDN = "_acme-challenge." + env
+		} else if env := os.Getenv("LEGO_DOMAIN"); env != "" {
+			challengeFQDN = "_acme-challenge." + env
+		}
+		validation, _ = cmd.Flags().GetString("validation")
+		if validation == "" {
+			validation = os.Getenv("CERTBOT_VALIDATION")
+		}
+		if validation == "" {
+			validation = os.Getenv("LEGO_KEY_AUTH")
+		}
 	}
 	if challengeFQDN == "" || validation == "" {
-		return fmt.Errorf("domain and validation token are required: use --domain/--validation flags, or set CERTBOT_DOMAIN/CERTBOT_VALIDATION, or LEGO_DOMAIN/LEGO_KEY_AUTH")
+		return fmt.Errorf("domain and validation token are required: pass as positional args, use --domain/--validation flags, or set CERTBOT_DOMAIN/CERTBOT_VALIDATION or LEGO_DOMAIN/LEGO_KEY_AUTH")
 	}
 
 	// 2. Resolve config from flags + env vars (flags take precedence over env)
@@ -279,27 +285,32 @@ func runManualCleanup(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	// 1. Domain and validation token.
-	// Priority: --domain/--validation flags > CERTBOT_* env vars > LEGO_* env vars.
-	// --domain is the full challenge FQDN (e.g. _acme-challenge.example.com).
+	// Priority: positional args (lego) > --domain/--validation flags > CERTBOT_* env vars > LEGO_* env vars.
+	// Positional args and --domain are the full challenge FQDN (trailing dot stripped if present).
 	// CERTBOT_DOMAIN and LEGO_DOMAIN are bare domains; _acme-challenge. is prepended.
-	domainFlag, _ := cmd.Flags().GetString("domain")
-	var challengeFQDN string
-	if domainFlag != "" {
-		challengeFQDN = domainFlag
-	} else if env := os.Getenv("CERTBOT_DOMAIN"); env != "" {
-		challengeFQDN = "_acme-challenge." + env
-	} else if env := os.Getenv("LEGO_DOMAIN"); env != "" {
-		challengeFQDN = "_acme-challenge." + env
-	}
-	validation, _ := cmd.Flags().GetString("validation")
-	if validation == "" {
-		validation = os.Getenv("CERTBOT_VALIDATION")
-	}
-	if validation == "" {
-		validation = os.Getenv("LEGO_KEY_AUTH")
+	var challengeFQDN, validation string
+	if len(args) >= 2 {
+		challengeFQDN = strings.TrimSuffix(args[0], ".")
+		validation = args[1]
+	} else {
+		domainFlag, _ := cmd.Flags().GetString("domain")
+		if domainFlag != "" {
+			challengeFQDN = strings.TrimSuffix(domainFlag, ".")
+		} else if env := os.Getenv("CERTBOT_DOMAIN"); env != "" {
+			challengeFQDN = "_acme-challenge." + env
+		} else if env := os.Getenv("LEGO_DOMAIN"); env != "" {
+			challengeFQDN = "_acme-challenge." + env
+		}
+		validation, _ = cmd.Flags().GetString("validation")
+		if validation == "" {
+			validation = os.Getenv("CERTBOT_VALIDATION")
+		}
+		if validation == "" {
+			validation = os.Getenv("LEGO_KEY_AUTH")
+		}
 	}
 	if challengeFQDN == "" || validation == "" {
-		return fmt.Errorf("domain and validation token are required: use --domain/--validation flags, or set CERTBOT_DOMAIN/CERTBOT_VALIDATION, or LEGO_DOMAIN/LEGO_KEY_AUTH")
+		return fmt.Errorf("domain and validation token are required: pass as positional args, use --domain/--validation flags, or set CERTBOT_DOMAIN/CERTBOT_VALIDATION or LEGO_DOMAIN/LEGO_KEY_AUTH")
 	}
 
 	// 2. Config from flags + env vars
