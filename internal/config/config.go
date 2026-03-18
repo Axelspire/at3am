@@ -90,7 +90,7 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		Timeout:           300 * time.Second,
-		Interval:          5 * time.Second,
+		Interval:          3 * time.Second,
 		Threshold:         95.0,
 		ConsecutivePasses: 2,
 		Profile:           ProfileDefault,
@@ -109,13 +109,13 @@ func (c *Config) ApplyProfile(p Profile) error {
 		// Auth threshold: ALL, Public threshold: ALL minus 2, Consecutive: 3, Timeout: 600s
 		c.Threshold = 100.0
 		c.ConsecutivePasses = 3
-		c.Interval = 10 * time.Second
+		c.Interval = 3 * time.Second
 		c.Timeout = 600 * time.Second
 	case ProfileDefault:
 		// Auth threshold: ALL, Public threshold: 1, Consecutive: 2, Timeout: 300s
 		c.Threshold = 95.0
 		c.ConsecutivePasses = 2
-		c.Interval = 5 * time.Second
+		c.Interval = 3 * time.Second
 		c.Timeout = 300 * time.Second
 	case ProfileFast:
 		// Auth threshold: ≥ ceil(N/2), Public threshold: 1, Consecutive: 1, Timeout: 120s
