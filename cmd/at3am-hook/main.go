@@ -51,6 +51,22 @@ var manualCleanupCmd = &cobra.Command{
 	RunE:  runManualCleanup,
 }
 
+// present and cleanup are aliases used by the lego ACME client, which calls
+// the hook binary as: at3am-hook present / at3am-hook cleanup
+// and sets LEGO_DOMAIN, LEGO_KEY_AUTH via environment variables.
+var presentCmd = &cobra.Command{
+	Use:    "present",
+	Short:  "lego DNS hook: create TXT record and wait for propagation",
+	Hidden: true,
+	RunE:   runManualAuth,
+}
+
+var cleanupCmd = &cobra.Command{
+	Use:    "cleanup",
+	Short:  "lego DNS hook: delete TXT record",
+	Hidden: true,
+	RunE:   runManualCleanup,
+}
 
 func defaultCredsPath(providerName string) string {
 	home, err := os.UserHomeDir()
@@ -61,7 +77,7 @@ func defaultCredsPath(providerName string) string {
 }
 
 func init() {
-	rootCmd.AddCommand(versionCmd, manualAuthCmd, manualCleanupCmd)
+	rootCmd.AddCommand(versionCmd, manualAuthCmd, manualCleanupCmd, presentCmd, cleanupCmd)
 
 	// Flags for manual-auth
 	manualAuthCmd.Flags().String("domain", "", "Domain to issue certificate for (overrides CERTBOT_DOMAIN)")
@@ -85,6 +101,27 @@ func init() {
 	manualCleanupCmd.Flags().String("log-file", "", "Log file path")
 	manualCleanupCmd.Flags().Bool("skip-dns", false, "Skip DNS record deletion")
 
+	// Flags for present (lego alias for manual-auth)
+	presentCmd.Flags().String("domain", "", "Full challenge FQDN (overrides LEGO_DOMAIN)")
+	presentCmd.Flags().String("validation", "", "DNS-01 TXT record value (overrides LEGO_KEY_AUTH)")
+	presentCmd.Flags().String("provider", "", "DNS provider (auto-detected if not set)")
+	presentCmd.Flags().String("creds", "", "Path to credentials YAML file (default: ~/.at3am/<provider>.yaml)")
+	presentCmd.Flags().String("profile", "default", "Propagation profile: yolo, fast, default, or strict")
+	presentCmd.Flags().String("log-level", "warn", "Log level: debug, info, warn, error")
+	presentCmd.Flags().String("log-file", "", "Log file path")
+	presentCmd.Flags().String("output", "quiet", "Output format: quiet, text, json")
+	presentCmd.Flags().String("challenge-type", "dns-01", "ACME challenge type: dns-01 or persist")
+	presentCmd.Flags().Bool("skip-dns", false, "Skip DNS record creation/deletion (propagation wait only)")
+
+	// Flags for cleanup (lego alias for manual-cleanup)
+	cleanupCmd.Flags().String("domain", "", "Full challenge FQDN (overrides LEGO_DOMAIN)")
+	cleanupCmd.Flags().String("validation", "", "DNS-01 TXT record value to delete (overrides LEGO_KEY_AUTH)")
+	cleanupCmd.Flags().String("provider", "", "DNS provider (auto-detected if not set)")
+	cleanupCmd.Flags().String("creds", "", "Path to credentials YAML file (default: ~/.at3am/<provider>.yaml)")
+	cleanupCmd.Flags().String("profile", "default", "Propagation profile: yolo, fast, default, or strict")
+	cleanupCmd.Flags().String("log-level", "warn", "Log level: debug, info, warn, error")
+	cleanupCmd.Flags().String("log-file", "", "Log file path")
+	cleanupCmd.Flags().Bool("skip-dns", false, "Skip DNS record deletion")
 }
 
 func runManualAuth(cmd *cobra.Command, args []string) error {
