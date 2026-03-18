@@ -63,9 +63,11 @@ func init() {
 	rootCmd.AddCommand(versionCmd, manualAuthCmd, manualCleanupCmd)
 
 	// Flags for manual-auth
+	manualAuthCmd.Flags().String("domain", "", "Domain to issue certificate for (overrides CERTBOT_DOMAIN)")
+	manualAuthCmd.Flags().String("validation", "", "DNS-01 TXT record value (overrides CERTBOT_VALIDATION)")
 	manualAuthCmd.Flags().String("provider", "", "DNS provider (auto-detected if not set)")
 	manualAuthCmd.Flags().String("creds", "", "Path to credentials YAML file (default: ~/.at3am/<provider>.yaml)")
-	manualAuthCmd.Flags().String("profile", "default", "Propagation profile: default, strict, or fast")
+	manualAuthCmd.Flags().String("profile", "default", "Propagation profile: yolo, fast, default, or strict")
 	manualAuthCmd.Flags().String("log-level", "warn", "Log level: debug, info, warn, error")
 	manualAuthCmd.Flags().String("log-file", "", "Log file path")
 	manualAuthCmd.Flags().String("output", "quiet", "Output format: quiet, text, json")
@@ -73,9 +75,11 @@ func init() {
 	manualAuthCmd.Flags().Bool("skip-dns", false, "Skip DNS record creation/deletion (propagation wait only)")
 
 	// Flags for manual-cleanup
+	manualCleanupCmd.Flags().String("domain", "", "Domain to clean up (overrides CERTBOT_DOMAIN)")
+	manualCleanupCmd.Flags().String("validation", "", "DNS-01 TXT record value to delete (overrides CERTBOT_VALIDATION)")
 	manualCleanupCmd.Flags().String("provider", "", "DNS provider (auto-detected if not set)")
 	manualCleanupCmd.Flags().String("creds", "", "Path to credentials YAML file (default: ~/.at3am/<provider>.yaml)")
-	manualCleanupCmd.Flags().String("profile", "default", "Propagation profile: default, strict, or fast")
+	manualCleanupCmd.Flags().String("profile", "default", "Propagation profile: yolo, fast, default, or strict")
 	manualCleanupCmd.Flags().String("log-level", "warn", "Log level: debug, info, warn, error")
 	manualCleanupCmd.Flags().String("log-file", "", "Log file path")
 	manualCleanupCmd.Flags().Bool("skip-dns", false, "Skip DNS record deletion")
@@ -84,11 +88,17 @@ func init() {
 func runManualAuth(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	// 1. Required Certbot env vars
-	domain := os.Getenv("CERTBOT_DOMAIN")
-	validation := os.Getenv("CERTBOT_VALIDATION")
+	// 1. Domain and validation token: flags take precedence over env vars
+	domain, _ := cmd.Flags().GetString("domain")
+	if domain == "" {
+		domain = os.Getenv("CERTBOT_DOMAIN")
+	}
+	validation, _ := cmd.Flags().GetString("validation")
+	if validation == "" {
+		validation = os.Getenv("CERTBOT_VALIDATION")
+	}
 	if domain == "" || validation == "" {
-		return fmt.Errorf("CERTBOT_DOMAIN and CERTBOT_VALIDATION environment variables are required")
+		return fmt.Errorf("domain and validation token are required: use --domain/--validation or set CERTBOT_DOMAIN/CERTBOT_VALIDATION")
 	}
 	challengeFQDN := "_acme-challenge." + domain
 
@@ -219,11 +229,17 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 func runManualCleanup(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	// 1. Required Certbot env vars
-	domain := os.Getenv("CERTBOT_DOMAIN")
-	validation := os.Getenv("CERTBOT_VALIDATION")
+	// 1. Domain and validation token: flags take precedence over env vars
+	domain, _ := cmd.Flags().GetString("domain")
+	if domain == "" {
+		domain = os.Getenv("CERTBOT_DOMAIN")
+	}
+	validation, _ := cmd.Flags().GetString("validation")
+	if validation == "" {
+		validation = os.Getenv("CERTBOT_VALIDATION")
+	}
 	if domain == "" || validation == "" {
-		return fmt.Errorf("CERTBOT_DOMAIN and CERTBOT_VALIDATION environment variables are required")
+		return fmt.Errorf("domain and validation token are required: use --domain/--validation or set CERTBOT_DOMAIN/CERTBOT_VALIDATION")
 	}
 	challengeFQDN := "_acme-challenge." + domain
 
