@@ -88,19 +88,23 @@ func init() {
 func runManualAuth(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	// 1. Domain and validation token: flags take precedence over env vars
-	domain, _ := cmd.Flags().GetString("domain")
-	if domain == "" {
-		domain = os.Getenv("CERTBOT_DOMAIN")
+	// 1. Domain and validation token: flags take precedence over env vars.
+	// --domain is the full challenge FQDN (e.g. _acme-challenge.example.com).
+	// CERTBOT_DOMAIN is the bare domain (e.g. example.com); prefix is added below.
+	domainFlag, _ := cmd.Flags().GetString("domain")
+	var challengeFQDN string
+	if domainFlag != "" {
+		challengeFQDN = domainFlag
+	} else if env := os.Getenv("CERTBOT_DOMAIN"); env != "" {
+		challengeFQDN = "_acme-challenge." + env
 	}
 	validation, _ := cmd.Flags().GetString("validation")
 	if validation == "" {
 		validation = os.Getenv("CERTBOT_VALIDATION")
 	}
-	if domain == "" || validation == "" {
+	if challengeFQDN == "" || validation == "" {
 		return fmt.Errorf("domain and validation token are required: use --domain/--validation or set CERTBOT_DOMAIN/CERTBOT_VALIDATION")
 	}
-	challengeFQDN := "_acme-challenge." + domain
 
 	// 2. Resolve config from flags + env vars (flags take precedence over env)
 	providerName, _ := cmd.Flags().GetString("provider")
@@ -154,7 +158,7 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("provider autodetect failed: %w", err)
 			}
 			if detected == "" {
-				return fmt.Errorf("could not autodetect DNS provider for %q; set AT3AM_DNS_PROVIDER or use --provider", domain)
+				return fmt.Errorf("could not autodetect DNS provider for %q; set AT3AM_DNS_PROVIDER or use --provider", challengeFQDN)
 			}
 			providerName = detected
 		}
@@ -197,7 +201,7 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 		if _, err := p.AppendRecords(ctx, zone, []libdns.Record{rec}); err != nil {
 			return fmt.Errorf("create TXT record: %w", err)
 		}
-		fmt.Printf("Created _acme-challenge TXT record for %s\n", domain)
+		fmt.Printf("Created TXT record for %s\n", challengeFQDN)
 	}
 
 	// 5. Build config and run the propagation wait engine
@@ -229,19 +233,23 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 func runManualCleanup(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	// 1. Domain and validation token: flags take precedence over env vars
-	domain, _ := cmd.Flags().GetString("domain")
-	if domain == "" {
-		domain = os.Getenv("CERTBOT_DOMAIN")
+	// 1. Domain and validation token: flags take precedence over env vars.
+	// --domain is the full challenge FQDN (e.g. _acme-challenge.example.com).
+	// CERTBOT_DOMAIN is the bare domain (e.g. example.com); prefix is added below.
+	domainFlag, _ := cmd.Flags().GetString("domain")
+	var challengeFQDN string
+	if domainFlag != "" {
+		challengeFQDN = domainFlag
+	} else if env := os.Getenv("CERTBOT_DOMAIN"); env != "" {
+		challengeFQDN = "_acme-challenge." + env
 	}
 	validation, _ := cmd.Flags().GetString("validation")
 	if validation == "" {
 		validation = os.Getenv("CERTBOT_VALIDATION")
 	}
-	if domain == "" || validation == "" {
+	if challengeFQDN == "" || validation == "" {
 		return fmt.Errorf("domain and validation token are required: use --domain/--validation or set CERTBOT_DOMAIN/CERTBOT_VALIDATION")
 	}
-	challengeFQDN := "_acme-challenge." + domain
 
 	// 2. Config from flags + env vars
 	logLevelStr, _ := cmd.Flags().GetString("log-level")
@@ -268,7 +276,7 @@ func runManualCleanup(cmd *cobra.Command, args []string) error {
 
 	// 4. Skip DNS operations if requested
 	if skipDNS {
-		fmt.Printf("AT3AM_SKIP_DNS=1: skipping TXT record deletion for %s\n", domain)
+		fmt.Printf("AT3AM_SKIP_DNS=1: skipping TXT record deletion for %s\n", challengeFQDN)
 		return nil
 	}
 
@@ -283,7 +291,7 @@ func runManualCleanup(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("provider autodetect failed: %w", err)
 		}
 		if detected == "" {
-			return fmt.Errorf("could not autodetect DNS provider for %q; set AT3AM_DNS_PROVIDER or use --provider", domain)
+			return fmt.Errorf("could not autodetect DNS provider for %q; set AT3AM_DNS_PROVIDER or use --provider", challengeFQDN)
 		}
 		providerName = detected
 	}
@@ -317,7 +325,7 @@ func runManualCleanup(cmd *cobra.Command, args []string) error {
 		// Log a warning but don't fail — cleanup is best-effort
 		fmt.Fprintf(os.Stderr, "Warning: could not delete TXT record: %v\n", err)
 	} else {
-		fmt.Printf("Deleted _acme-challenge TXT record for %s\n", domain)
+		fmt.Printf("Deleted TXT record for %s\n", challengeFQDN)
 	}
 	return nil
 }
