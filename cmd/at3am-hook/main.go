@@ -24,6 +24,8 @@ var (
 	buildTime = "unknown"
 )
 
+const defaultResolverTimeout = 2 * time.Second
+
 var rootCmd = &cobra.Command{
 	Use:   "at3am-hook",
 	Short: "Certbot integration hook for at3am",
@@ -265,7 +267,7 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid profile: %w", err)
 	}
 
-	querier := resolver.New(2 * time.Second)
+	querier := resolver.New(defaultResolverTimeout)
 	pool := resolver.NewPool(querier, nil)
 
 	// Discover authoritative NS resolvers for the challenge domain so the
@@ -277,8 +279,11 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 
 	formatter := output.NewFormatter(outputFormat, os.Stdout)
 	runner := wait.NewRunner(cfg, pool, formatter)
-	os.Exit(runner.Run(ctx))
-	return nil
+	code := runner.Run(ctx)
+	if code == 0 {
+		return nil
+	}
+	return fmt.Errorf("manual auth failed with exit code %d", code)
 }
 
 func runManualCleanup(cmd *cobra.Command, args []string) error {
