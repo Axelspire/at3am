@@ -14,5 +14,5 @@ currently being supported with security updates.
 
 ## Reporting a Vulnerability
 
-Create an issue in this repository or email 3am@axelspire.com with the vulnerability details.
+Please email 3am@axelspire.com with the vulnerability details so we can investigate and address the issue privately.
 
