@@ -24,6 +24,8 @@ var (
 	buildTime = "unknown"
 )
 
+const defaultResolverTimeout = 2 * time.Second
+
 var rootCmd = &cobra.Command{
 	Use:   "at3am-hook",
 	Short: "Certbot integration hook for at3am",
@@ -265,7 +267,7 @@ func runManualAuth(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid profile: %w", err)
 	}
 
-	querier := resolver.New(2 * time.Second)
+	querier := resolver.New(defaultResolverTimeout)
 	pool := resolver.NewPool(querier, nil)
 
 	// Discover authoritative NS resolvers for the challenge domain so the
