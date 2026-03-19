@@ -2,8 +2,8 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+The following table lists which versions of this project currently receive
+security updates. Only actively supported versions will receive security fixes.
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -14,5 +14,5 @@ currently being supported with security updates.
 
 ## Reporting a Vulnerability
 
-Create an issue in this repository or email 3am@axelspire.com with the vulnerability details.
+Please email 3am@axelspire.com with the vulnerability details so we can investigate and address the issue privately.
 
