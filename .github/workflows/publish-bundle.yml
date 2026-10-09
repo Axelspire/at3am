@@ -1,0 +1,87 @@
+name: publish-bundle
+
+# On tag: emit digests + vanity publish layout (MODULE, installers, companion,
+# archive/<tag>/*.url, tags/<tag>/*) for 3am-core consume (CORE-62).
+# Same process family as acme.sh Propose/Publish — layout artifact for core PR.
+
+on:
+  push:
+    tags: [ 'v*.*.*' ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (e.g. v0.2.2)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Build publish layout
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          OUT=publish-layout
+          mkdir -p "$OUT/archive/$TAG" "$OUT/tags/$TAG" "$OUT/companion"
+          printf '%s\n' "$TAG" > "$OUT/MODULE"
+          cp install.sh install.ps1 INSTALL.md "$OUT/"
+          cp companion/VERSION companion/README.md companion/agent.env.tmpl "$OUT/companion/"
+          # Platforms shipped in current releases
+          for p in linux-amd64 linux-arm64 linux-arm linux-386 darwin-amd64 darwin-arm64 windows-amd64 windows-arm64; do
+            URL="https://github.com/${REPO}/releases/download/${TAG}/${p}.zip"
+            printf '%s\n' "$URL" > "$OUT/archive/$TAG/${p}.url"
+            # Prefer release asset digest from API; fall back to downloading once.
+            DIGEST=$(gh api "repos/${REPO}/releases/tags/${TAG}" \
+              --jq ".assets[] | select(.name==\"${p}.zip\") | .digest" 2>/dev/null \
+              | sed 's/^sha256://' || true)
+            if [ -z "$DIGEST" ]; then
+              curl -fsSL -o "/tmp/${p}.zip" "$URL"
+              DIGEST=$(sha256sum "/tmp/${p}.zip" | awk '{print $1}')
+              rm -f "/tmp/${p}.zip"
+            fi
+            printf '%s\n' "$DIGEST" > "$OUT/tags/$TAG/${p}"
+            echo "$p $DIGEST"
+          done
+          # Manifest template (core TF rebuilds baked URLs)
+          cat > "$OUT/manifest.json" <<EOF
+          {
+            "name": "at3am",
+            "title": "at3am — DNS-01 propagation oracle",
+            "module": "$TAG",
+            "companion": "$(tr -d '\n' < companion/VERSION)",
+            "os": ["linux", "darwin", "windows"],
+            "capabilities": ["dns01-wait", "certbot-hook"],
+            "layout": "multi-arch-zip-url",
+            "upgrade": "self-upgrade-every-run"
+          }
+          EOF
+          tar -czf "at3am-publish-bundle-${TAG}.tar.gz" -C "$OUT" .
+          ls -la
+
+      - name: Upload publish bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: at3am-publish-bundle-${{ steps.tag.outputs.tag }}
+          path: at3am-publish-bundle-${{ steps.tag.outputs.tag }}.tar.gz
+          retention-days: 30
