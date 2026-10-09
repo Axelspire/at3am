@@ -8,14 +8,31 @@ It is aligned with [Let's Encrypt's Multi-Perspective Issuance Corroboration (MP
 
 ## 🚀 Quick Install
 
-**Linux, macOS, or Git Bash:**
+**3AM customers (preferred — fleet module, digests, self-upgrade):**
+
 ```bash
+curl -fsSL https://axel.<customer_id>.3am.global/root/agent/at3am/install.sh | sh
+```
+
+```powershell
+irm https://axel.<customer_id>.3am.global/root/agent/at3am/install.ps1 | iex
+```
+
+See published `INSTALL.md` on your vanity for the exact FQDN. Fleet pin is `agents.at3am.module` only ([CORE-62](https://axelspire.atlassian.net/browse/CORE-62)).
+
+**Community / OSS** (optional pin via `AT3AM_MODULE`; unset resolves the latest *tag*, not an unpinned float for vanity):
+
+```bash
+# Pin a release tag (recommended)
+AT3AM_MODULE=v0.2.2 curl -sfL https://raw.githubusercontent.com/Axelspire/at3am/v0.2.2/install.sh | sh
+
+# Or follow latest tag
 curl -sfL https://raw.githubusercontent.com/Axelspire/at3am/main/install.sh | sh
 ```
 
-**Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/Axelspire/at3am/main/install.ps1 | iex
+$env:AT3AM_MODULE = "v0.2.2"
+irm https://raw.githubusercontent.com/Axelspire/at3am/v0.2.2/install.ps1 | iex
 ```
 
 After installation run `at3am --help` to verify.
