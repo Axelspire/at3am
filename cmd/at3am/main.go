@@ -10,6 +10,7 @@ import (
 	"github.com/axelspire/at3am/internal/log"
 	"github.com/axelspire/at3am/internal/output"
 	"github.com/axelspire/at3am/internal/resolver"
+	"github.com/axelspire/at3am/internal/upgrade"
 	"github.com/axelspire/at3am/internal/wait"
 	"github.com/spf13/cobra"
 )
@@ -25,6 +26,22 @@ var rootCmd = &cobra.Command{
 	Short: "Intelligent DNS-01 validation for ACME clients",
 	Long: "at3am watches global DNS resolvers and signals when a DNS-01 TXT record has propagated with sufficient confidence.\n\n" +
 		"(c) Axelspire 2026, contact: 3am@axelspire.com",
+	// CORE-62: vanity installs self-upgrade on every run when AGENT_BASE is set.
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		name := cmd.Name()
+		if name == "version" || name == "help" || name == "completion" {
+			return nil
+		}
+		reexec, err := upgrade.MaybeSelfUpgrade(version)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "at3am: self-upgrade warning: %v\n", err)
+			return nil // do not block the operator run on upgrade failure
+		}
+		if reexec {
+			os.Exit(0)
+		}
+		return nil
+	},
 }
 
 var versionCmd = &cobra.Command{
